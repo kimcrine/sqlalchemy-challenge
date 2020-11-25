@@ -96,14 +96,41 @@ def tobs():
     query_result = session.query(Measurement.date,Measurement.tobs).filter(Measurement.date >= query_date).all()
     session.close()
 
-    tobsall = []
+    # Create a dictionary from the row data and append to a list of temperature observations
+    tobs_all = []
     for date, tobs in query_result:
         tobs_dict = {}
         tobs_dict["Date"] = date
         tobs_dict["Tobs"] = tobs
         tobsall.append(tobs_dict)
 
-    return jsonify(tobsall)
+    return jsonify(tobs_all)
+
+# Start
+@app.route("/api/v1.0/<start>")
+def temp_range_start(start):
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+    # Query for the minimum temperature, the average temperature, and the max temperature for a given start
+    query_result =   session.query(  Measurement.date,\
+                                func.min(Measurement.tobs), \
+                                func.avg(Measurement.tobs), \
+                                func.max(Measurement.tobs)).\
+                        filter(Measurement.date >= start).\
+                        group_by(Measurement.date).all()
+    session.close() 
+
+    # Create a dictionary from the row data and append to a list of temperature observations
+    tobs_all = []
+    for date, min, avg, max in query_result:
+        tobs_dict = {}
+        tobs_dict["Date"] = date
+        tobs_dict["TMIN"] = min
+        tobs_dict["TAVG"] = avg
+        tobs_dict["TMAX"] = max
+        tobs_all.append(tobs_dict)
+
+    return jsonify(tobs_all)
 
 
 if __name__ == '__main__':
