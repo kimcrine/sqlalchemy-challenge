@@ -10,12 +10,12 @@ from flask import Flask, jsonify
 #################################################
 # Database Setup
 #################################################
-engine = create_engine("sqlite:///hawaii.sqlite")
+engine = create_engine("sqlite:///Resources/hawaii.sqlite")
 Base = automap_base()
 Base.prepare(engine, reflect=True)
 
-#Measurement = Base.classes.measurement
-#Station = Base.classes.station
+Measurement = Base.classes.measurement
+Station = Base.classes.station
 
 #################################################
 # Flask Setup
@@ -27,10 +27,12 @@ app = Flask(__name__)
 # Flask Routes
 #################################################
 
+# Homepage
 @app.route("/")
 def welcome():
     """List all available api routes."""
     return (
+        f"Welcome to the Hawaii Climate Page! Surfs Up!<br/> "
         f"Available Routes:<br/>"
         f"Precipitation: /api/v1.0/precipitation<br/>"
         f"Stations: /api/v1.0/stations<br/>"
@@ -38,5 +40,26 @@ def welcome():
         f"Temperature stats from the start date: /api/v1.0/yyyy-mm-dd<br/>"
         f"Temperature stats from start to end dates: /api/v1.0/yyyy-mm-dd/yyyy-mm-dd"
     )
+
+# Precipitation
+@app.route("/api/v1.0/precipitation")
+def precipitation():
+    # Create our session (link) from Python to the DB
+    session = Session(engine)
+    # Query all dates and precipitation values
+    query_result = session.query(Measurement.date, Measurement.prcp).\
+                order_by(Measurement.date).all()
+    session.close()
+
+    # Create a dictionary from the row data and append to a list of precipitation
+    precipitation = []
+    for date, prcp in query_result:
+        prcp_dict = {}
+        prcp_dict["Date"] = date
+        prcp_dict["Precipitation"] = prcp
+        precipitation.append(prcp_dict)
+
+    return jsonify(precipitation)
+
 if __name__ == '__main__':
     app.run(debug=True)
